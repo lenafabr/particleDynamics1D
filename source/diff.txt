@@ -1,0 +1,319 @@
+diff --git a/source/fusionutils.f90 b/source/fusionutils.f90
+index 4525db5..37f6a91 100644
+--- a/source/fusionutils.f90
++++ b/source/fusionutils.f90
+@@ -1,29 +1,29 @@
+ MODULE FUSIONUTILS
+-! subroutines to simulate fusion events between particles
+-! VERSION BY: SAURABH MOGRE 
+-! DATE: MAY 2020
+-
+-CONTAINS
++  ! subroutines to simulate fusion events between particles
++  ! VERSION BY: SAURABH MOGRE 
++  ! DATE: MAY 2020
++  
++  CONTAINS
+   SUBROUTINE FUSEPARTICLES(PGROUP,PARAMP)
+-  ! subroutine to implement fusion of particles
++    ! subroutine to implement fusion of particles
+     USE PARTICLEUTILS, ONLY: PARTICLEGROUP,PARTICLE,PARTICLEPARAMS,&
+-                             REMOVEPARTICLE
++    REMOVEPARTICLE
+     
+     IMPLICIT NONE
+     TYPE(PARTICLEGROUP), POINTER :: PGROUP
+     TYPE(PARTICLEPARAMS), POINTER :: PARAMP
+     TYPE(PARTICLE), POINTER :: PARTP1,PARTP2,PARTP
+-
++    
+     INTEGER :: PC1,PC2,NPROC,TOTNPART,DELIND,KEEPIND,NCHECK,REMPART
+     LOGICAL :: CHECKFUSE
+-
++    
+     TOTNPART = SUM(PGROUP%NPART)
+     PC1 = 1
+     NPROC = 0
+     DO WHILE(NPROC.LT.(TOTNPART-1).AND.SUM(PGROUP%NPART).GT.0)
+       NPROC = NPROC + 1
+       PARTP1=>PGROUP%PLIST(PC1)
+-
++      
+       ! run through other particles
+       NCHECK = 0
+       PC2 = PC1+1
+@@ -32,8 +32,10 @@ CONTAINS
+         NCHECK = NCHECK+1
+         PARTP2=>PGROUP%PLIST(PC2)
+         
++        ! check if fusion occurs between a given particle pair
+         CALL CHECKFUSION(CHECKFUSE,PARTP1,PARTP2,PARAMP)
+-
++        
++        ! if fusion has occured, update particle states
+         IF(CHECKFUSE) THEN
+           ! decide which particle to keep
+           ! default: particle with larger PTYPE  keeps its identity
+@@ -44,12 +46,21 @@ CONTAINS
+             DELIND = PC1
+             KEEPIND = PC2
+           END IF
++
+           ! update properties of the fused particle
+           PARTP=>PGROUP%PLIST(KEEPIND)
+           PARTP%NFUSE = PARTP%NFUSE+1
++
++          ! update protein conversion rate caused by acquiring material during fusion
+           CALL UPDATECONVRATE(PARTP,PARAMP)
++
++          ! if particle switches state on fusion, update the state
++          IF(PARAMP%SWITCHONFUSE(PARTP%PTYPE)) THEN
++            PARTP%CURSTATE = 1
++            PARTP%CURDIR = -1
++          END IF
+           
+-          ! remove unused particle                                    
++          ! remove unused particle
+           CALL REMOVEPARTICLE(PGROUP,DELIND)
+           IF(DELIND.EQ.PC1) THEN
+             PC1 = PC1-1
+@@ -59,19 +70,19 @@ CONTAINS
+             CYCLE
+           END IF
+         END IF
+-
++        
+         PC2 = PC2 + 1
+       END DO
+       PC1 = PC1+1
+     END DO
+     
+   END SUBROUTINE FUSEPARTICLES
+-
++  
+   SUBROUTINE CHECKFUSION(CHECKFUSE,PARTP1,PARTP2,PARAMP)
+-    !POS1,POS2,PTYPE1,PTYPE2,PRAD1,PRAD2)
+   ! subroutine to check whether fusion occurs
++  ! the checkfuse flag returns the result of the fusion process
+     USE PARTICLEUTILS, ONLY: PARTICLE,PARTICLEPARAMS
+-    USE KEYS, ONLY: USEPFUSE,DELT,PFUSE,KFUSE
++    USE KEYS, ONLY: PFUSE
+     USE MT19937, ONLY: GRND
+     TYPE(PARTICLE),POINTER :: PARTP1,PARTP2
+     TYPE(PARTICLEPARAMS),POINTER :: PARAMP
+@@ -83,69 +94,65 @@ CONTAINS
+     
+     CHECKFUSE = .FALSE.
+     AREINTERACTING = .FALSE.
+-
++    
+     POS1 = PARTP1%POS
+     PTYPE1 = PARTP1%PTYPE
+     POS2 = PARTP2%POS
+     PTYPE2 = PARTP2%PTYPE
+     SEP = ABS(POS1-POS2)
+-
++    
+     ! get probability of fusion
+-    IF(USEPFUSE) THEN
+-      PF = PFUSE(PTYPE1,PTYPE2)
+-    ELSE
+-      PF = 1-EXP(-KFUSE(PTYPE1,PTYPE2)*DELT)
+-    END IF
+-
++    PF = PFUSE(PTYPE1,PTYPE2)
++    
+     ! end check if fusion probability is zero
+     IF(PF.LE.0D0) RETURN
+-
++    
+     ! end check if particles have reached maximum number of fusion events allowed
+     IF((PARTP1%NFUSE.GE.PARAMP%MAXNFUSE(PARTP1%PTYPE)).OR.&
+-                  (PARTP2%NFUSE.GE.PARAMP%MAXNFUSE(PARTP2%PTYPE))) RETURN
+-
+-    ! check if particles touch
++    (PARTP2%NFUSE.GE.PARAMP%MAXNFUSE(PARTP2%PTYPE))) RETURN
++    
++    ! end check if particles are not within contact distance
+     IF(SEP.GT.(PARTP1%PRAD+PARTP2%PRAD)) THEN
+-      IF(USEPFUSE) THEN
+-        CALL CHECKINTERACTION(PARTP1,PARTP2,AREINTERACTING)
+-        IF(AREINTERACTING) CALL UPDATEINTERACTION(PARTP1,PARTP2,.FALSE.)
+-      END IF
++      CALL CHECKINTERACTION(PARTP1,PARTP2,AREINTERACTING)
++      IF(AREINTERACTING) CALL UPDATEINTERACTION(PARTP1,PARTP2,.FALSE.)
+       RETURN
+     END IF
+-
+-    ! check if particles are already interacting (particles cannot fuse while in an interaction)
+-    IF(USEPFUSE) THEN 
+-      CALL CHECKINTERACTION(PARTP1,PARTP2,AREINTERACTING)
+-      IF(AREINTERACTING) RETURN
+-    END IF  
++    
++    ! check if particles are already interacting 
++    ! particles cannot fuse while in an interaction
++    ! this means that a previous check was performed, and fusion did not occur
++    CALL CHECKINTERACTION(PARTP1,PARTP2,AREINTERACTING)
++    IF(AREINTERACTING) RETURN
+     
+     ! set flag if fusion is successful
+     IF(GRND().LE.PF) CHECKFUSE = .TRUE.
++
++    ! set error if fusion is unsuccessful with pf=1
+     IF(.NOT.CHECKFUSE.AND.PF.EQ.1D0) THEN
+       PRINT*, 'UNSUCCESSFUL FUSION BETWEEN ID1,ID2,TYPE1,TYPE2:',&
+-                                    PARTP1%ID,PARTP2%ID,PARTP1%PTYPE,PARTP2%PTYPE
++      PARTP1%ID,PARTP2%ID,PARTP1%PTYPE,PARTP2%PTYPE
+       STOP 1                                    
+     END IF
+     
+     ! update interaction
+-    IF(USEPFUSE) CALL UPDATEINTERACTION(PARTP1,PARTP2,.NOT.CHECKFUSE)
+-
++    CALL UPDATEINTERACTION(PARTP1,PARTP2,.NOT.CHECKFUSE)
++    
+   END SUBROUTINE CHECKFUSION
+-
++  
+   SUBROUTINE CHECKINTERACTION(PARTP1,PARTP2,STATUS)
+-  ! checks whether particles are interacting
++  ! checks whether particles are currently interacting
+     USE PARTICLEUTILS,ONLY: PARTICLE
+     IMPLICIT NONE
+-
++    
+     TYPE(PARTICLE),POINTER :: PARTP1,PARTP2
+     LOGICAL,INTENT(OUT) :: STATUS
+     INTEGER :: PC
+     LOGICAL :: INT12,INT21
+-
++    
+     STATUS = .FALSE.
+     INT12 = .FALSE.
+     INT21 = .FALSE.
+-
++    
+     PC = 1
+     DO WHILE(PC.LE.MIN(PARTP1%NINT,SIZE(PARTP1%INTERACTING)))
+       IF(PARTP1%INTERACTING(PC).EQ.PARTP2%ID) THEN
+@@ -154,7 +161,7 @@ CONTAINS
+       END IF
+       PC = PC+1
+     END DO
+-
++    
+     PC = 1
+     DO WHILE(PC.LE.MIN(PARTP2%NINT,SIZE(PARTP2%INTERACTING)))
+       IF(PARTP2%INTERACTING(PC).EQ.PARTP1%ID) THEN
+@@ -164,26 +171,26 @@ CONTAINS
+       PC = PC+1
+     END DO
+     
+-
++    
+     IF(INT12.AND.INT21) THEN
+       STATUS = .TRUE.
+     ELSE IF(XOR(INT12,INT21)) THEN
+       PRINT*, 'ERROR IN CHECKINTERACTION: check status'
+       STOP 1
+     END IF
+-
++    
+   END SUBROUTINE CHECKINTERACTION
+-
++  
+   SUBROUTINE UPDATEINTERACTION(PARTP1,PARTP2,STATUS)
+   ! updates the interaction between particles to that indicated by STATUS
+     USE PARTICLEUTILS,ONLY: PARTICLE
+     IMPLICIT NONE
+-
++    
+     TYPE(PARTICLE),POINTER :: PARTP1,PARTP2
+     LOGICAL,INTENT(IN) :: STATUS
+     INTEGER :: PC
+     LOGICAL :: INTFLAG
+-
++    
+     ! PRINT*, 'TESTX: UPDATING INTERACTION, STATUS, NINT1, NINT2:', STATUS,PARTP1%NINT,PARTP2%NINT
+     
+     IF(STATUS) THEN
+@@ -200,7 +207,7 @@ CONTAINS
+         END DO
+         STOP 1
+       END IF
+-
++      
+       IF(PARTP2%NINT.LT.SIZE(PARTP2%INTERACTING)) THEN
+         PARTP2%INTERACTING(PARTP2%NINT+1) = PARTP1%ID
+         PARTP2%NINT = PARTP2%NINT+1
+@@ -242,50 +249,54 @@ CONTAINS
+       END DO
+       
+     END IF
+-
++    
+   END SUBROUTINE UPDATEINTERACTION
+-
++  
+   SUBROUTINE UPDATEACIDIFICATION(PARTP,PARAMP)
+-  ! update acidification of particle
++    ! update acidification of particle
+     USE KEYS,ONLY: DELT
+     USE PARTICLEUTILS,ONLY: PARTICLE,PARTICLEPARAMS
+     IMPLICIT NONE
+-
++    
+     TYPE(PARTICLE),POINTER :: PARTP
+     TYPE(PARTICLEPARAMS),POINTER :: PARAMP
+     
+     IF(PARTP%ACIDIFICATIONRATE.GT.0D0) THEN
+       PARTP%ACIDITY = MIN(PARTP%ACIDITY+PARTP%ACIDIFICATIONRATE*DELT,PARAMP%STARTACID(1));
+     END IF
+-
++    
+   END SUBROUTINE UPDATEACIDIFICATION  
+-
++  
+   SUBROUTINE UPDATECONVRATE(PARTP,PARAMP)
+-  ! update acidification rate/acidity and
+-  ! protein conversion rate for a particle, dependent on acidity
++    ! update acidification rate/acidity and
++    ! protein conversion rate for a particle, dependent on acidity
+     USE PARTICLEUTILS,ONLY: PARTICLE,PARTICLEPARAMS
+     IMPLICIT NONE
+-
++    
+     TYPE(PARTICLE),POINTER :: PARTP
+     TYPE(PARTICLEPARAMS),POINTER :: PARAMP
+-
++    
+     IF(PARAMP%ACIDIFICATIONRATE(PARTP%PTYPE).GT.0D0) THEN
+       ! fusion increases the number of pumps, thus increasing acidification rate
+-      PARTP%ACIDIFICATIONRATE  = PARTP%NFUSE*PARAMP%ACIDIFICATIONRATE(PARTP%PTYPE)
++      ! acidification rate for each pump is proportional to the difference between
++      ! the current acidification and the maximal lysosome acidification
++      PARTP%ACIDIFICATIONRATE  = PARTP%NFUSE*PARAMP%ACIDIFICATIONRATE(PARTP%PTYPE)*&
++      & (PARAMP%STARTACID(1)-PARTP%ACIDITY)
+       ! PARTP%ACIDIFICATIONRATE  = PARAMP%ACIDIFICATIONRATE(PARTP%PTYPE)
+     ELSE
+       ! volumetric dilution of acidity upon fusion
+       PARTP%ACIDITY = PARAMP%STARTACID(1)*PARTP%NFUSE/&
+-                      &(PARTP%NFUSE+PARAMP%PRAD(2)**3/PARAMP%PRAD(1)**3)
++      &(PARTP%NFUSE+PARAMP%PRAD(2)**3/PARAMP%PRAD(1)**3)
+     END IF
+     
++    
+     IF(PARAMP%KM(PARTP%PTYPE).GT.0D0) THEN
+       PARTP%PROTCONV = PARAMP%KMAX(:,:,PARTP%PTYPE)*PARTP%ACIDITY/&
+-                                      (PARTP%ACIDITY+PARAMP%KM(PARTP%PTYPE))
++      (PARTP%ACIDITY+PARAMP%KM(PARTP%PTYPE))
+     ELSE
+       PARTP%PROTCONV = PARAMP%KMAX(:,:,PARTP%PTYPE)
+     END IF
+-
++    
+   END SUBROUTINE UPDATECONVRATE  
+-
++  
+ END MODULE FUSIONUTILS

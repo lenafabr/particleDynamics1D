@@ -1,0 +1,362 @@
+\documentclass[12pt]{article}
+\usepackage{url,setspace,amsmath}
+\usepackage{graphicx}
+\setlength{\oddsidemargin}{-8mm}
+\setlength{\evensidemargin}{0mm}
+\setlength{\textwidth}{175mm}
+\setlength{\topmargin}{-5mm}
+\setlength{\textheight}{240mm}
+\setlength{\headheight}{0cm}
+\setstretch{1}
+
+\begin{document}
+\title{\vspace{-2cm}Documentation for particledynamics1D: code for particle dynamics in a 1D domain}
+\author{S.~S.~Mogre, E.~F.~Koslover}
+\date{Last updated \today}
+\maketitle
+
+The code in this package will run a simulation of particle dynamics in a one-dimensional domain.
+
+%\tableofcontents
+%\newpage
+
+\section{Compilation Instructions}
+To compile and run the program, you will need the following:
+\begin{itemize}
+\item A compiler capable of handling Fortran90.
+The code has been tested with the gfortran compiler. The default compiler is gfortran.
+\item BLAS and LAPACK libraries installed in a place where the compiler knows to look for them
+\item Optionally: Matlab to visualize output data
+\end{itemize}
+
+The code has been tested on Ubuntu Linux. 
+
+To compile with gfortran, go into the \path=source= directory. Type \verb=make=.
+To compile with any other compiler that can handle Fortran90, type
+\begin{verbatim}
+make FC=compiler
+\end{verbatim}
+substituting in the command you usually use to call the compiler. 
+
+If the compilation works properly, the executable \path=partdynamics1D.exe= will appear in the main directory.
+
+\section{Usage Instructions}
+To run the program in the main directory, type:
+\begin{verbatim}
+./partdynamics1D.exe suffix
+\end{verbatim}
+
+Here, \verb=suffix= can be any string up to 100 characters in length. 
+The program reads in all input information from a file named
+\path=param.suffix= where, again, \verb=suffix= is the command-line
+argument. If no argument is supplied, it will look for a file named
+\path=param=. If the desired parameter file does not exist, the
+program will exit with an error. You can supply multiple suffixes to read in multiple parameter files.
+
+The parameters in the input file are given in the format `{\em KEYWORD} value' where the possible keywords and values are described
+in Section \ref{sec:keywords}. Each keyword goes on a separate
+line. Any line that starts with "\#" is treated as a comment and
+ignored. Any blank line is also ignored. The keywords in the parameter
+file are not case sensitive. For the most part, the order in which the
+keywords are given does not matter. All parameters have default
+values, so you need only specify keywords and values when you want to
+change something from the default.
+
+
+\section{Example for a Quick Start}
+\subsection{Example}
+An example parameter file (\verb=param.example1=) is provided. This will run a simulation for the dynamics of a system with 2 different types of protein-carrying particles. The particle types start at opposite ends of a 1D domain, moving towards the other end at a constant velocity. Particle type 1 undergoes stochastic reversals of direction. Particles of different types can fuse with each other. Run the example with 
+\begin{verbatim}
+./partdynamics1D.exe example
+\end{verbatim}
+
+Use the script \verb=checkexample.m= to visualize the movement and protein flux into one end of the domain. (NOT IMPLEMENTED)
+%It should look something like this:
+
+%\centerline{\includegraphics[width=0.7\textwidth]{example_MSD.eps}}
+
+%\subsection{Example 2}
+%Example 2 runs a simulation with one particle type performing stochastic direction reversals. Use the script \verb=example2.m= to visualize particle movement and protein flux.
+
+% ---------------------------------------------------------
+
+\section{Keyword Index}
+\label{sec:keywords}
+The code will attempt to read parameters out of a file named \path=param.suffix= where ``suffix'' is the command line argument. If no command line arguments are supplied, it will look for a file named \path=param=. If multiple arguments are supplied, it will read multiple parameter files in sequence.
+
+The parameter file should have one keyword per line and must end with a blank line. All blank lines and all lines beginning with \# are ignored. For the most part, the order of the lines and the capitalization of the keywords does not matter. All keywords except {\em ACTION} are optional. The default values for each parameter are listed below. If a keyword is supplied, then values may or may not be needed as well. Again, the required and optional value types are listed below. 
+
+Keywords and multiple values are separated by spaces. 
+
+When reading the parameter file, lines longer than 500 characters will be truncated. To continue onto the next line, add ``+++'' at the end of the line to be continued.
+No individual keyword or  value should be longer than 100 characters.
+
+Floating point numbers can be formated as $1.0$, $1.1D0$, $10e-1$, $-1.0E+01$, etc., where the exponential notation specifier must be D or E (case insensitive). Integer numbers can also be specified in exponential notation without decimal points (eg: 1000 or 1E3). Logical values can be specified as T, F, TRUE, FALSE, 1, or 0 (with 1 corresponding to true and 0 to false).
+
+The length units are set with respect to the domain length (\textit{DOMLEN}). Time units are set using a combination of velocity (\textit{VEL}) and domain length.
+
+\begin{itemize}
+%
+\item {\it ACTION}
+  \begin{itemize}
+    \item  value: 1 string of at most 20 characters; no default
+    \item This keyword sets the overall calculation performed by the program (see Sec.\ref{sec:tasks})
+    \item Possible values are: RUNDYNAMICS
+    \item Input format: ACTION string
+    \item `string' can contain up to 20 characters.
+  \end{itemize}
+%
+\item {\it ACIDIFICATIONRATE}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE}; default: 0
+	\item Rate of acidification/enzyme acquisition (used for vATPase pump model)
+	\item Input format: ACIDIFICATIONRATE\quad$k_{1}\quad k_{2}\quad...\quad k_{NTYPE}$
+	\item $k_i$ is the acidification rate for particle type $i$
+\end{itemize}
+%
+\item {\it BUFLEN}
+  \begin{itemize}
+    \item  type: float; size: 1; default: 0
+    \item Buffer length to determine an encounter event between particles
+    \item Input format: BUFLEN value
+  \end{itemize}
+%
+\item {\it DIFFCONST} (not implmented)
+  \begin{itemize}
+    \item  type: float; size: \textit{NTYPE}; default: 0
+    \item Diffusion coefficient for each particle type. If only one value is entered, all particles types will have the same diffusion coefficient.
+    \item Input format: DIFFCONST\quad$D_{1}\quad D_{2}\quad...\quad D_{NTYPE}$
+    \item $D_{i}$ is the diffusion coefficient for particle type $i$.
+  \end{itemize}
+%
+\item {\it DOMLEN}
+	\begin{itemize}
+	 	\item  type: float; size: 1; default: 1
+	 	\item Length of the simulation domain.
+	 	\item Input format: DOMLEN value
+	\end{itemize}
+%
+\item {\it DELT}
+  \begin{itemize}
+    \item  type: float; size: 1; default: 1D-1
+    \item Time-step for dynamics
+    \item Input format: DELT value
+  \end{itemize}
+%
+\item {\it DOFUSION}
+  \begin{itemize}
+   	\item  type: logical; size: 1; default: F
+   	\item Determines whether particles undergo fusion.
+   	\item Input format: DOFUSION value
+  \end{itemize}
+%
+\item {\it KFUSE}
+	\begin{itemize}
+		\item  type: float; size: \textit{NTYPE} $\times$ \textit{NTYPE}; default: 0
+		\item Rate of fusion between particle types.
+		\item Input format: KFUSE\quad$i$\quad$k_{i,1}\quad k_{i,2}\quad...\quad k_{i,NTYPE}$
+		\item $k_{i,j}$ is the fusion rate between particle types $i$ and $j$
+		\item Multiple lines should be used for different values of $i$.
+	\end{itemize}
+%
+\item {\it KPROD}
+	\begin{itemize}
+		\item  type: float; size: \textit{NTYPE}; default: 0
+		\item Rate of production for all particle types. If only one value is entered, all particles are produced at that rate. 
+		\item Input format: KPROD\quad$k_{1}\quad k_{2}\quad...\quad k_{NTYPE}$
+		\item $k_{i}$ is the rate at which particle type $i$ is produced.
+	\end{itemize} 
+%
+\item {\it KREV}
+	\begin{itemize}
+		\item  type: float; size: \textit{NTYPE}; default: 0
+		\item Rate of direction reversal for all particle types. 
+		\item Input format: KREV\quad$k_{1}\quad k_{2}\quad...\quad k_{NTYPE}$
+		\item $k_{i}$ is the rate at which particle type $i$ reverses movement direction.
+	\end{itemize}
+%
+\item {\it KSTOP}
+	\begin{itemize}
+		\item  type: float; size: \textit{NTYPE}; default: 0
+		\item Rate of pausing for all particle types. If only one value is entered, all particle types are assigned that pause rate. 
+		\item Input format: KSTOP\quad$k_{1}\quad k_{2}\quad...\quad k_{NTYPE}$
+		\item $k_{i}$ is the rate at which particle type $i$ pauses moving.
+	\end{itemize}
+%
+\item {\it MAXNFUSE}
+	\begin{itemize}
+		\item  type: integer; size: \textit{NTYPE}; default: 1
+		\item Number of fusion events needed to saturate particle types. If only one value is entered, all particle types are assigned that value.
+		\item Input format: MAXNFUSE\quad$N_{1}\quad N_{2}\quad...\quad N_{NTYPE}$
+		\item $N_{i}$ is the number of fusion events needed to saturate a particle of type $i$.
+	\end{itemize}  
+%
+\item {\it NPART}
+	\begin{itemize}
+		\item  type: integer; size: \textit{NTYPE}; default: 1
+		\item Initial number of particles of each type. If only one value is entered, all particle types are assigned that value.
+		\item Input format: NPART\quad$N_{1}\quad N_{2}\quad...\quad N_{NTYPE}$
+		\item $N_{i}$ is the initial number of particles of type $i$.
+	\end{itemize}   
+%
+\item {\it NPROT}
+	\begin{itemize}
+		\item  type: integer; size: \textit{NTYPE}; default: 1
+		\item Number of protein types within each particle type. If only one value is entered, all particle types are assigned that value.
+		\item Input format: NPROT\quad$N_{1}\quad N_{2}\quad...\quad N_{NTYPE}$
+		\item $N_{i}$ is the number of protein types in particle type $i$.
+	\end{itemize}
+%
+\item {\it NREG}
+\begin{itemize}
+	\item  type: integer; size: 1; default: 0
+	\item Number of special regions within the domain.
+	\item Input format: NREG\quad value
+\end{itemize} 
+%
+\item {\it NSTEPS}
+\begin{itemize}
+	\item  type: integer; size: 1; default: 0
+	\item Number of simulation steps.
+	\item Input format: NSTEPS\quad value
+\end{itemize} 
+%
+\item {\it NTRIALS}
+\begin{itemize}
+	\item  type: integer; size: 1; default: 0
+	\item Number of independent simulation trials.
+	\item Input format: NTRIALS\quad value
+\end{itemize} 
+%
+\item {\it NTYPE}
+\begin{itemize}
+	\item  type: integer; size: 1; default: 0
+	\item Number of particle types. Maximum 5 types allowed.
+	\item Input format: NTYPE\quad value
+\end{itemize}
+%
+\item {\it OUTFILE}
+	\begin{itemize}
+		\item 1 string; default: *.out
+		\item File to which output is written. Can also be specified in OUTPUT.
+	\end{itemize} 
+%
+\item {\it OUTPUT}
+\begin{itemize}
+	\item 1 optional integer, 1 optional string; defaults: 1, *.out
+	\item Information about writing output to file.
+	\item integer: how often to write output; string: output file (* is replaced with suffix)
+\end{itemize}
+%
+\item {\it PFUSE}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE} $\times$ \textit{NTYPE}; default: 0
+	\item Probability of fusion between particle types. If this option is used, probabilities will be used instead of rates to determine fusion events.
+	\item Input format: PFUSE\quad$i$\quad$p_{i,1}\quad p_{i,2}\quad...\quad p_{i,NTYPE}$
+	\item $p_{i,j}$ is the fusion rate between particle types $i$ and $j$
+	\item Multiple lines should be used for different values of $i$.
+\end{itemize}
+%
+\item {\it PRAD}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE}; default: 1D-2
+	\item Rate of direction reversal for all particle types. If only one value is entered, all particles are assigned that reversal rate. 
+	\item Input format: PRAD\quad$r_{1}\quad r_{2}\quad...\quad r_{NTYPE}$
+	\item $r_{i}$ is the radius of particles of type $i$.
+\end{itemize}
+%
+\item {\it PRINTEVERY}
+\begin{itemize}
+	\item  type: integer; size: 1; default: 0
+	\item How often simulation status is displayed on the console.
+	\item Input format: PRINTEVERY\quad value
+\end{itemize}
+%
+\item {\it PROTCONV}
+\begin{itemize}
+	\item  type: float; size: \textit{NPROT} $\times$ \textit{NPROT}$\times$\textit{NTYPE}; default: 0
+	\item Rates of conversion between different protein types within different particle types.
+	\item Input format: PROTCONV\quad$i$\quad$j$\quad$k_{i,j,1}\quad k_{i,j,2}\quad...\quad k_{i,j,NTYPE}$
+	\item $k_{i,j,k}$ is the conversion rate for protein $j$ to protein $i$ in particle type $k$.
+	\item Multiple lines should be used for different values of $i$ and $j$.
+\end{itemize}
+%
+\item {\it REGPOS}
+\begin{itemize}
+	\item  type: float; size: \textit{NREG}; default: -1
+	\item Positions of special regions within the domain. A negative value results in equally spaced regions.
+	\item Input format: REGPOS\quad$x_{1}\quad x_{2}\quad...\quad x_{NREG}$
+	\item $x_{i}$ is the position of region $i$.
+\end{itemize}
+%    
+\item {\it RNGSEED}
+\begin{itemize}
+	\item 1 integer; default: 0
+	\item seed for random number generator
+	\item value of 0 will seed with system time in milliseconds
+	\item value of -1 will use the last 5 characters in the suffix
+	\item value of -2 will use the last 4 charactes in the suffix and the millisecond time
+	\item other positive value: the seed is used directly for repeatable simulations (should be positive)
+\end{itemize}
+%
+\item {\it SNAPFILE}
+\begin{itemize}
+	\item 1 string; default: *.snap.out
+	\item File to which snapshot of particles is written. Can also be specified within SNAPSHOTS.
+\end{itemize}
+%
+\item {\it SNAPSHOTS}
+  \begin{itemize}
+    \item 1 optional integer, 1 optional string; defaults: 1, *.snap.out 
+    \item Dump snapshots over the course of the simulation.
+    \item integer: how often to dump snapshots; string: snapshot file (* is replaced with suffix).
+   \end{itemize}
+%
+\item {\it STARTPOS}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE}; default: 0
+	\item Position at which particles of different types are produced.
+	\item Input format: STARTPOS\quad$x_{1}\quad x_{2}\quad...\quad x_{NTYPE}$
+	\item $x_{i}$ is the starting position for particles of type $i$.
+\end{itemize}
+%
+\item {\it STARTPROT}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE} $\times$ \textit{NPROT}; default: 0
+	\item Initial protein content in particles.
+	\item Input format: STARTPROT\quad$i$\quad$c_{i,1}\quad c_{i,2}\quad...\quad k_{i,NPROT}$
+	\item $c_{i,j}$ is the amount of protein of type $j$ within particle type $i$
+	\item Multiple lines should be used for different values of $i$.
+\end{itemize}
+%
+\item {\it STARTDIR}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE}; default: 0
+	\item Initial transport state of particles. 1 = moving in the positive x-direction. -1 = moving in the negative x-direction. 0 = stationary.
+	\item Input format: STARTDIR\quad$a_{1}\quad a_{2}\quad...\quad a_{NTYPE}$
+	\item $a_{i}$ is the starting direction for particles of type $i$.
+\end{itemize}
+%
+\item {\it USEPFUSE}
+\begin{itemize}
+	\item  type: logical; size: 1; default: F
+	\item Determines whether fusion probability is used instead of a fusion rate.
+	\item Input format: USEPFUSE value
+\end{itemize}	
+%
+\item {\it VEL}
+\begin{itemize}
+	\item  type: float; size: \textit{NTYPE}; default: 0
+	\item Velocity of different particle types.
+	\item Input format: VEL\quad$v_{1}\quad v_{2}\quad...\quad v_{NTYPE}$
+	\item $v_{i}$ is the velocity particles of type $i$.
+\end{itemize}
+
+% --------------------------
+
+\end{itemize}
+
+\bibliographystyle{aip} 
+\bibliography{fiberModel}
+
+\end{document}

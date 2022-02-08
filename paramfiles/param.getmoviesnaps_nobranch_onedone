@@ -1,0 +1,200 @@
+# parameter file for simulating 1D particle dynamics
+# refer to README.pdf for more information on keywords
+# this param file involves AVs undergoing bidirectional motion upon spawning
+
+# what action to perform
+ACTION RUNDYNAMICS
+
+# number of steps
+NSTEPS 2D6
+
+# number of trials
+NTRIALS 1
+
+##############################################
+# particle information
+##############################################
+
+# number of particle types
+# (1 = lysosome, 2 = autophagosome)
+NTYPE 2
+
+# initial number of particles of each type
+NPART 0 0
+
+# starting position for particle types
+# 0 => cell body, 1 => cell tip
+# negative values => start uniformly in domain
+STARTPOS 0D0 1D0
+
+# start particle in axon tip?
+STARTINTIP F T
+
+# spawn over some distance?
+# if spawnlength is negative, particle spawns uniformly over spawnlength
+# if spawnlength is positive, particle spawns with exponential distribution (mean = spawnlength)
+# if spawnlength is zero, particle spawns at STARTPOS
+#SPAWNLENGTH 0D0 0.14D0
+SPAWNLENGTH 0D0 0D0
+
+# initial state of particles
+# 1 = bidirectional with stops
+# 2 = fully retrograde with stops
+# 3 = fully anterograde with stops
+# 4 = fully stationary
+STARTSTATE 3 1
+#STARTSTATE 1 1
+
+# initial direction in each state
+# +1 moves towards the distal tip
+# -1 moves towards the cell body
+STARTDIR -1 -1 1 0
+
+# do particles switch state on fusing?
+SWITCHONFUSE F F
+
+# switching rates between states
+# format: i j r_ijk
+# where i,j are states
+# r_ijk is the transition rate from state i to state j for particle type k
+KSWITCH 1 2 0D0 0.7826D0
+
+# walk rates
+# format i r_ijk
+# r_ij is the rate of starting a walk for particle of type i in state j
+KWALK 1 0D0 1D0 1D0 0D0
+KWALK 2 618.45D0 1D0 0D0 0D0
+
+# halt rates
+# format i r_ij
+# r_ij is the rate of halting a walk for particle of type i in state j
+KHALT 1 0D0 0D0 0D0 0D0
+KHALT 2 527.5D0 0.6578D0 0D0 0D0
+
+# particle radii
+# can add more values if each particle type has a different radius
+# Using AP radius: 400nm
+# Using lyso radius: 100nm
+# domain length: 10um = 1 length unit
+PRAD 3.7915D-4  9.4787D-5
+
+# particle velocities in each direction 
+# format: particle_type retrograde_velocity anterograde_velocity
+VEL 1 1.4545D0 1.7778D0
+VEL 2 1D0 1D0
+
+# particle diffusion coefficients
+DIFFCONST 0D0
+
+# rate of exiting tip region for each particle type
+# negative values => immediate exit
+KEXIT 1.2852D0 -1D0
+
+# probability of going retrograde on starting a walk
+# format particle_type p_j
+# p_j is the retrograde probability in state p_j
+PRETRO 1 0.5 1 0 0
+PRETRO 2 0.5 1 0 0
+
+# production rate
+#KPROD 0D0 0D0
+KPROD 14.034D0 6.9760D0
+
+##############################################
+# protein information
+##############################################
+# number of protein types
+# default 2 types: non-degraded, degraded
+# protein 1: non-degraded, protein 2: degraded
+# format: np_i
+# where np_i is the number of protein types in particle type i
+NPROT 0 2
+
+# initial protein content
+# format: i kij
+# where i is the particle type, kij is the initial content of protein j in i
+STARTPROT 1 0D0 0D0
+STARTPROT 2 1D0 0D0
+
+# initial acidity
+# format: a_i
+# where a_i is the initial acidification of the ith particle type
+STARTACID 1D0 0D0
+
+# acidification parameters for vATPase pumps
+# assume phagosomes initially have no pumps
+# acquiring pumps from fusing with lysosomes increases the acidification rate
+# once pumps are acquired, the acidity of phagosomes increases at a constant rate
+# enter acidification rate for each particle type
+# if acidification rate is zero, then acidity increases by dilution during fusion
+USEDILUTION T
+ACIDIFICATIONRATE 0D0 0D0
+
+# Michaelis-Menten parameters for vATPase pump kinetics
+# maximum pumping rate
+KMAX_A 1D0
+# pumping rate saturation parameter
+KMVALS_A 1D0
+
+# maximal protein conversion rates kmax
+# format: i j r_ijk
+# where i,j are protein types,
+# r_ijk is the maximal rate of conversion of prot j to i in particle type k
+KMAX 2 1 0D0 1D0
+KMAX 1 1 0D0 -1D0
+
+# saturation constant for protein conversion
+# format: KM_i
+# where KM_i is the Michaelis-Menten constant for protein conversion rate in particle type i
+# if KM_i is zero, the protein conversion rate defaults to KMAX_i
+KMVALS 0D0 0.01D0
+
+# maturation rate for fused particles
+# particles start maturing after fusion
+# mature particles do not fuse further
+KMAT 0D0 0D0
+
+##############################################
+# fusion parameters
+##############################################
+# do particles undergo fusion?
+DOFUSION T
+
+# fusion probability
+# format: i pij
+# where i is the particle type, pij is the probability of fusion between i and j
+# pij = pji by default
+PFUSE 1 0D0 0.0074D0
+
+# maximum number of allowed fusion events
+MAXNFUSE 1 1
+
+##############################################
+# domain information
+##############################################
+# domain length
+# Domain length sets units of length (Assuming a domain of 700um)
+DOMLEN 1D0
+
+# boundary conditions
+# reflecting boundary at 0 (cell body) and 1 (cell tip) respectively
+REFBOUND F F
+
+##############################################
+# simulation info
+##############################################
+# time step
+DELT 1D-4
+# save output file to this path
+#OUTPUT 0 /data/SimData/particledynamics1D/outfiles/*.out
+OUTPUT 0 /mnt/d/kosloverlab/particledynamics1D/results/outfiles/*.out
+# save snapshots to this path
+# second argument <0 takes only one snapshot at the end of simulation
+#SNAPSHOTS -1 /data/SimData/particledynamics1D/snapfiles/*.snap.out
+#SNAPSHOTS 200 /data/SimData/particledynamics1D/snapfiles/*.snap.out
+SNAPSHOTS 200 /mnt/d/kosloverlab/particledynamics1D/results/snapfiles/*.snap.out
+# save distribution of number of fusions to this path
+#FUSEDIST 0 /data/SimData/particledynamics1D/nfusefiles/*.fuse.out
+# print status to console
+# -1 => print total 10 updates (updates once every NSTEPS/10 steps)
+PRINTEVERY -1
