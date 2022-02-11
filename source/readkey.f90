@@ -125,7 +125,7 @@ SUBROUTINE READKEY
     DO I = 1,NUMARG
       CALL GETARG(I, ARG)
       NPARAMFILES = NPARAMFILES + 1
-      WRITE(DUMSTR,'(A)') 'paramfiles/param.' //TRIM(ADJUSTL(ARG))
+      WRITE(DUMSTR,'(A)') 'param.' //TRIM(ADJUSTL(ARG))
       PARAMFILES(NPARAMFILES) = DUMSTR
     END DO
     ! reset arg to its original value

@@ -4,7 +4,7 @@
 %% add required scripts to path
 addpath('./tools/')
 %% simulation output files
-fnamestr = './results/snapfiles/example.snap.out';
+fnamestr = './examples/example.snap.out';
 options = struct('readlastsnap',1);
 %%
 tic
@@ -44,17 +44,15 @@ for tc = 1:length(grouplist)
 	phxfuse = cat(1,phxfuse,xfuse(ptypes==2));
   lysointip = cat(1,lysointip,intip(ptypes==1));
 end
-save('./results/example_processed.mat');
+save('example_processed.mat');
 toc
-%%
-load('./results/example_processed.mat');
-%% set params to discretize domain
+%% set parameters to discretize domain
 vp = 1;
 vy = 2.67;
 Lreal = 1055;
 dt = 1d-4; % simulation timestep
 lyfrate = 100.001; % framerate for lysosomes (binwidth)
-phfrate = vy*lyfrate; % framerate for phagosomes (binwidth)
+phfrate = (vy/vp)*lyfrate; % framerate for phagosomes (binwidth)
 xp = 0:(phfrate*vp*dt):1; % possible positions for phagosomes
 xp(end) = 1;
 xl = 0:(lyfrate*vy*dt):1; % possible positions for lysosomes

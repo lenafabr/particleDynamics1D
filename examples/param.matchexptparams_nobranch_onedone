@@ -34,6 +34,7 @@ STARTINTIP F T
 # if spawnlength is negative, particle spawns uniformly over spawnlength
 # if spawnlength is positive, particle spawns with exponential distribution (mean = spawnlength)
 # if spawnlength is zero, particle spawns at STARTPOS
+#SPAWNLENGTH 0D0 0.14D0
 SPAWNLENGTH 0D0 0D0
 
 # initial state of particles
@@ -42,6 +43,7 @@ SPAWNLENGTH 0D0 0D0
 # 3 = fully anterograde with stops
 # 4 = fully stationary
 STARTSTATE 3 1
+#STARTSTATE 1 1
 
 # initial direction in each state
 # +1 moves towards the distal tip
@@ -184,12 +186,15 @@ REFBOUND F F
 # time step
 DELT 1D-4
 # save output file to this path
-OUTPUT 0 ./results/outfiles/*.out
+#OUTPUT 0 /data/SimData/particledynamics1D/outfiles/*.out
+OUTPUT 0 /mnt/d/kosloverlab/particledynamics1D/results/outfiles/*.out
 # save snapshots to this path
-# second argument <0 takes a single snapshot at the end of simulation
-SNAPSHOTS -1 ./results/snapfiles/*.snap.out
+# second argument <0 takes only one snapshot at the end of simulation
+#SNAPSHOTS -1 /data/SimData/particledynamics1D/snapfiles/*.snap.out
+#SNAPSHOTS 200 /data/SimData/particledynamics1D/snapfiles/*.snap.out
+SNAPSHOTS -1 /mnt/d/kosloverlab/particledynamics1D/results/snapfiles/*.snap.out
 # save distribution of number of fusions to this path
-#FUSEDIST 0 ./results/nfusefiles/*.fuse.out
+#FUSEDIST 0 /data/SimData/particledynamics1D/nfusefiles/*.fuse.out
 # print status to console
 # -1 => print total 10 updates (updates once every NSTEPS/10 steps)
 PRINTEVERY -1
