@@ -192,4 +192,4 @@ SNAPSHOTS -1 *.snap.out
 #FUSEDIST 0 *.fuse.out
 # print status to console
 # -1 => print total 10 updates (updates once every NSTEPS/10 steps)
-PRINTEVERY -1
+PRINTEVERY 1D4
