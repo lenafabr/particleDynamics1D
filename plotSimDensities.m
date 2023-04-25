@@ -78,16 +78,17 @@ hold on
 plot(xlvals*Lreal,fliplr(nlyso+nfusedphago)./ntrials./dxl./Lreal,'o-','Color',clyso,'MarkerFaceColor',clyso)
 hold off
 
-legend('AV density', 'lysosome density','FontSize',28)
+legend('AV density', 'lysosome density','FontSize',16)
 
-plot_cleanup('Interpreter','tex','FontName','Arial','FontSize',28)
+
+plot_cleanup(gca,'FontSize',16)
+ylabel('organelle density ($\mu \mathrm{m}^{-1}$)')
+xlabel('distance from distal end ($\mu \mathrm{m}$)')
 xlim([0,1050]);
-ylabel('organelle density (\mum^{-1})')
-xlabel('distance from distal end (\mum)')
 %% plot fraction fused over space
 plot(xpvals*Lreal,nfusehist,'bo-')
-plot_cleanup('Interpreter','tex','FontName','Arial');
-xlabel('position (\mum)')
+plot_cleanup(gca,'FontSize',16);
+xlabel('position ($\mu$m)')
 ylabel('fraction of AVs fused')
 ylim([0,1])
 xlim([0,1060])
@@ -97,6 +98,6 @@ binwidth = 100;
 % xfusevals = (1-phxfuse(phxfuse>0 & phxfuse<1))*params.Lreal; % fused in the domain (excludes tip fusions)
 xfusevals = (1-phxfuse(phxfuse>0))*Lreal; % fused anywhere
 h = histogram(xfusevals,'BinWidth',binwidth,'Normalization','probability');
-xlabel('distance from distal tip at the time of fusion (\mum)')
+plot_cleanup(gca,'FontSize',16)
+xlabel('distance from distal tip at the time of fusion ($\mu$m)')
 ylabel('fraction of fused AVs')
-plot_cleanup('Interpreter','tex','FontName','Arial','FontSize',28)
